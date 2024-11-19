@@ -38,6 +38,7 @@
 (define-module (guix ui)                       ;import in user interfaces only
   #:use-module (guix i18n)
   #:use-module (guix colors)
+  #:use-module (guix describe)
   #:use-module (guix diagnostics)
   #:use-module (guix gexp)
   #:use-module (guix sets)
@@ -2190,11 +2191,17 @@ contain a 'define-command' form."
            (scandir directory* dot-scm?))
       '()))
 
-(define (extension-directories)
-  "Return the list of directories containing Guix extensions."
-  (filter file-exists?
-          (parse-path
-           (getenv "GUIX_EXTENSIONS_PATH"))))
+(define extension-directories
+  ;; The list of directories containing Guix extensions.
+  (let-values (((channels-scm channels-go) (package-path-entries)))
+    (set! %load-path (append %load-path channels-scm))
+    (set! %load-compiled-path (append %load-compiled-path channels-go))
+    (make-parameter
+     (append
+      (filter file-exists?
+              (parse-path
+               (getenv "GUIX_EXTENSIONS_PATH")))
+      channels-scm))))
 
 (define (commands)
   "Return the list of commands, alphabetically sorted."
