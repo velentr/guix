@@ -38,6 +38,7 @@
 (define-module (guix ui)                       ;import in user interfaces only
   #:use-module (guix i18n)
   #:use-module (guix colors)
+  #:use-module (guix describe)
   #:use-module (guix diagnostics)
   #:use-module (guix gexp)
   #:use-module (guix sets)
@@ -2192,9 +2193,14 @@ contain a 'define-command' form."
 
 (define (extension-directories)
   "Return the list of directories containing Guix extensions."
-  (filter file-exists?
-          (parse-path
-           (getenv "GUIX_EXTENSIONS_PATH"))))
+  (add-channels-to-load-path!)
+  (let ((channels (package-path-entries)))
+    (filter file-exists?
+            (parse-path
+             (getenv "GUIX_EXTENSIONS_PATH")
+             (map
+              (cut string-append <> "/guix/extensions")
+              channels)))))
 
 (define (commands)
   "Return the list of commands, alphabetically sorted."

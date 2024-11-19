@@ -27,6 +27,7 @@
                                 sexp->channel
                                 manifest-entry-channel)
   #:use-module (srfi srfi-1)
+  #:use-module (srfi srfi-11)
   #:use-module (srfi srfi-34)
   #:use-module (ice-9 match)
   #:export (current-profile
@@ -34,6 +35,7 @@
             current-profile-entries
             current-channels
             package-path-entries
+            add-channels-to-load-path!
 
             package-provenance
             package-channels
@@ -189,6 +191,21 @@ when applicable."
                                       "/lib/guile/" (effective-version)
                                       "/site-ccache")))
                (current-channel-entries))))
+
+(define add-channels-to-load-path!
+  (let ((promise
+         (delay
+           (let-values (((channels-scm channels-go) (package-path-entries)))
+             (set! %load-path
+                   (append %load-path channels-scm))
+             (set! %load-compiled-path
+                   (append %load-compiled-path channels-go))))))
+    (lambda ()
+      "Automatically add channels to Guile's search path.  Channels are added
+to the end of the path so they don't override Guix' own modules.  This
+function ensures that channels are only added to the search path once even if
+it is called multiple times."
+      (force promise))))
 
 (define (package-channels package)
   "Return the list of channels providing PACKAGE or an empty list if it could
